@@ -20,7 +20,7 @@ env:
   GOOGLE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
   TF_STATE_BUCKET: ${{ vars.GCP_STATE_BUCKET }}
 
-  jobs:
+jobs:
   plan:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -57,54 +57,7 @@ env:
         run: terraform validate
       - name: Terraform Plan
         run: terraform plan -input=false -no-color -lock-timeout=60s -var="project_id=${GOOGLE_PROJECT}"
-  
-  jobs:
-  plan:
-    # (Configuración actual del job plan)
-
-  apply:
-    name: 'Terraform Apply'
-    needs: plan # Asegura que apply solo corra si plan termina con éxito
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    # Se requieren permisos de escritura para la autenticación OIDC / WIF
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      # 1. Checkout
-      - name: Checkout GitHub Repository
-        uses: actions/checkout@v4
-
-      # 2. Autenticación WIF (Google Workload Identity Federation)
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/lab7-github-pool/providers/lab7-github-provider'
-          service_account: 'OFREDES@://gserviceaccount.com'
-
-      # 3. Terraform Setup
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      # 4. Terraform Init
-      - name: Terraform Init
-        run: terraform init
-
-      # 5. Terraform Validate
-      - name: Terraform Validate
-        run: terraform validate
-
-      # 6. Terraform Plan
-      - name: Terraform Plan
-        run: terraform plan
-
-      # 7. Terraform Apply
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
-
+    
   apply:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
