@@ -105,41 +105,41 @@ env:
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
- apply:
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  runs-on: ubuntu-latest
-  defaults:
-    run:
-      working-directory: .
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Validar variables del repositorio
-      env:
-        WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
-        SA_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT }}
-      run: |
-        test -n "$GOOGLE_PROJECT" && test "$GOOGLE_PROJECT" != '$' || { echo "::error::GCP_PROJECT_ID inválido"; exit 1; }
-        test -n "$TF_STATE_BUCKET" && test "$TF_STATE_BUCKET" != '$' || { echo "::error::GCP_STATE_BUCKET inválido"; exit 1; }
-        [[ "$SA_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.iam\.gserviceaccount\.com$ ]] || { echo "::error::GCP_SERVICE_ACCOUNT inválido"; exit 1; }
-        [[ "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]] || { echo "::error::Falta GCP_WIF_PROVIDER o tiene formato inválido"; exit 1; }
-    - name: Google Cloud OIDC
-      uses: google-github-actions/auth@v2
-      with:
-        project_id: ${{ vars.GCP_PROJECT_ID }}
-        workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
-        service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-    - name: Terraform CLI
-      uses: hashicorp/setup-terraform@v3
-      with:
-        terraform_version: "1.11.4"
-    - name: Inicializar backend GCS
-      run: terraform init -input=false -backend-config="bucket=${TF_STATE_BUCKET}"
-    - name: Validar formato
-      run: terraform fmt -check -recursive
-    - name: Validar configuración
-      run: terraform validate
-    - name: Revisar plan de main
-      run: terraform plan -input=false -no-color -lock-timeout=60s -var="project_id=${GOOGLE_PROJECT}"
-    - name: Aplicar infraestructura
-      run: terraform apply -input=false -auto-approve -lock-timeout=60s -var="project_id=${GOOGLE_PROJECT}"
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validar variables del repositorio
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          SA_EMAIL: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          test -n "$GOOGLE_PROJECT" && test "$GOOGLE_PROJECT" != '$' || { echo "::error::GCP_PROJECT_ID inválido"; exit 1; }
+          test -n "$TF_STATE_BUCKET" && test "$TF_STATE_BUCKET" != '$' || { echo "::error::GCP_STATE_BUCKET inválido"; exit 1; }
+          [[ "$SA_EMAIL" =~ ^[^[:space:]@]+@[^[:space:]@]+\.iam\.gserviceaccount\.com$ ]] || { echo "::error::GCP_SERVICE_ACCOUNT inválido"; exit 1; }
+          [[ "$WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[^/]+/providers/[^/]+$ ]] || { echo "::error::Falta GCP_WIF_PROVIDER o tiene formato inválido"; exit 1; }
+      - name: Google Cloud OIDC
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - name: Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.4"
+      - name: Inicializar backend GCS
+        run: terraform init -input=false -backend-config="bucket=${TF_STATE_BUCKET}"
+      - name: Validar formato
+        run: terraform fmt -check -recursive
+      - name: Validar configuración
+        run: terraform validate
+      - name: Revisar plan de main
+        run: terraform plan -input=false -no-color -lock-timeout=60s -var="project_id=${GOOGLE_PROJECT}"
+      - name: Aplicar infraestructura
+        run: terraform apply -input=false -auto-approve -lock-timeout=60s -var="project_id=${GOOGLE_PROJECT}"
